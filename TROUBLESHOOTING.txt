@@ -1,0 +1,174 @@
+ytd 1.2.1 - TROUBLESHOOTING
+===========================
+
+Start here:  run the check below and read the line marked MISSING.
+
+    macOS / Linux:   ./ytd --doctor
+    Windows:         .\ytd.cmd --doctor
+
+All five lines (Python, yt-dlp, FFmpeg, ffprobe, Deno) should say OK.
+In the commands below, Windows users type  .\ytd.cmd  where it says  ./ytd .
+
+
+1. STARTING ytd
+---------------
+
+Problem:  zsh: no such file or directory: /ytd
+Cause:    the leading dot is missing ("/ytd" means the top of the disk).
+Fix:      type  ./ytd  (dot, slash, ytd) inside the ytd folder.
+
+Problem:  zsh: permission denied: ./ytd
+Fix:      run it once as   sh ytd "<URL>"
+          (or: chmod +x ytd setup/bootstrap.sh)
+
+Problem:  zsh shows  quote>  or  dquote>  and waits
+Cause:    an unbalanced quote or apostrophe on the command line.
+Fix:      press Ctrl+C, then put the URL in ONE pair of "double quotes".
+
+Problem:  zsh: no matches found: https://www.youtube.com/watch?v=...
+          or on Windows only part of the link is used / "'list' is not recognized"
+Cause:    the URL was not quoted (? and & are special characters).
+Fix:      always write   ./ytd "https://www.youtube.com/watch?v=...&list=..."
+
+Problem:  'python' / 'ytd' is not recognized / command not found
+Fix:      run it from inside the ytd folder as ./ytd or .\ytd.cmd.
+          To type plain "ytd" anywhere:  ./ytd --add-to-path  then open a NEW
+          terminal window.
+
+Problem:  Windows PowerShell: typing  .\ytd  does nothing useful or asks
+          "How do you want to open this file?"
+Cause:    ".\ytd" is the macOS/Linux launcher.
+Fix:      on Windows use  .\ytd.cmd  (or double-click "Start ytd.cmd").
+
+
+2. FIRST-RUN SETUP
+------------------
+
+Problem:  Setup failed / was interrupted / you moved the folder
+Fix:      ./ytd --setup      (redoes the setup inside this folder)
+
+Problem:  "Could not reach GitHub to download Python" or other download errors
+Fix:      check the internet connection / proxy, then  ./ytd --setup .
+          Or install Python 3.10+ yourself (python.org, Homebrew, winget) -
+          setup uses an installed Python automatically.
+
+Problem:  Many lines "WARNING: Cache entry deserialization failed"
+Cause:    pip's download cache was written by another pip version.
+Fix:      harmless, ignore it (current setup no longer uses the cache).
+
+Problem:  Setup picked a Python inside another project's ".venv"
+          (your prompt starts with "(.venv)")
+Fix:      run  deactivate  first. Current setup already uses the real Python
+          installation behind an active environment.
+
+Problem:  Windows: "Windows protected your PC" (SmartScreen), or the scripts
+          do not run at all after extracting a downloaded zip
+Fix:      before extracting: right-click the zip > Properties > tick
+          "Unblock" > OK, then extract again.
+          Or in the SmartScreen dialog: "More info" > "Run anyway".
+
+
+3. FFMPEG  (needed to join video+audio and to make MP3s)
+--------------------------------------------------------
+
+Problem:  "FFmpeg is required to merge the selected video and audio streams"
+          and --doctor shows  MISSING  FFmpeg
+Fix:      read the reason printed next to MISSING, then see below.
+          Quick fix on any system - install FFmpeg the normal way, open a NEW
+          terminal, and ytd finds it automatically:
+              Windows:  winget install Gyan.FFmpeg
+              macOS:    brew install ffmpeg
+              Linux:    sudo apt install ffmpeg   (or dnf / pacman / zypper)
+
+Problem:  Windows: "...ffmpeg.exe was blocked by your organization's Device
+          Guard policy" and/or a Microsoft Defender "partially blocked" alert
+          (also on a personal PC)
+Cause:    Windows 11 Smart App Control blocks unsigned programs Microsoft
+          does not recognise yet, e.g. a freshly built FFmpeg.
+Fix:      1. winget install Gyan.FFmpeg          (widely used, recognised build)
+          2. open a NEW terminal window, then check:  ffmpeg -version
+          3. .\ytd.cmd --doctor   -> FFmpeg and ffprobe should be OK
+          ytd skips blocked copies automatically. With an older ytd version,
+          delete them once:
+             del runtime\windows-x64\bin\ffmpeg.exe runtime\windows-x64\bin\ffprobe.exe
+          Do not rename or move blocked files to get around the block.
+          If even the winget FFmpeg is blocked, Smart App Control can only be
+          switched off completely (Windows Security > App & browser control;
+          it cannot be switched back on without resetting Windows) - your
+          decision; on a company PC ask your IT department instead.
+
+Problem:  First download after setup is slow to start or times out on FFmpeg
+Cause:    antivirus scans a new program the first time it runs.
+Fix:      run the same command again.
+
+Problem:  Download works but "FFmpeg is required" appears only for MP3
+Fix:      same as above - MP3 conversion also needs FFmpeg.
+
+Problem:  "This FFmpeg build has no MP3 encoder (libmp3lame)"
+Fix:      install a full FFmpeg build (the commands above include MP3).
+
+
+4. YOUTUBE ERRORS
+-----------------
+
+Problem:  Downloads suddenly fail, "Requested format is not available",
+          only low resolutions, or "n challenge" / JavaScript warnings
+Cause:    YouTube changed something; an outdated yt-dlp is the usual reason.
+Fix:      ./ytd --update     then try again. Also check Deno is OK in --doctor.
+
+Problem:  "Sign in to confirm you're not a bot"
+Cause:    YouTube is rate-limiting your network.
+Fix:      wait (an hour or more) and try again; avoid very large batches.
+          ytd does not try to bypass this check.
+
+Problem:  "This video is private / age-restricted / members-only / unavailable"
+Fix:      these videos need a signed-in account with access; ytd cannot
+          download them.
+
+Problem:  Got 720p (or lower) although 1080p was requested
+Cause:    the video has no 1080p version; the WARNING block says so.
+Fix:      nothing to fix. Use --no-fallback to stop instead, and
+          ./ytd "<URL>" --list-formats to see what exists.
+
+Problem:  "This is a playlist link without a single video. Add --list"
+Fix:      ./ytd "<playlist URL>" --list          (whole playlist)
+
+Problem:  A playlist link downloaded only one video
+Cause:    that is the default for links containing "&list=".
+Fix:      add --list.   YouTube Mixes (list=RD...) stop after 25 items unless
+          you add --limit N.
+
+Problem:  Some playlist items FAILED
+Fix:      run the same command again - finished items are skipped, only the
+          missing ones are retried.
+
+
+5. FILES
+--------
+
+Problem:  Where are my files?
+Answer:   in the "downloads" folder inside the ytd folder (playlists get their
+          own sub-folder). The last lines of each download show the full path.
+          Choose another folder with  -o <folder>.
+
+Problem:  Downloads / setup disappeared on macOS
+Cause:    the ytd folder was in /tmp, which macOS empties on restart.
+Fix:      keep the ytd folder somewhere permanent (e.g. your home folder).
+
+Problem:  File is .mkv instead of .mp4
+Cause:    the best stream at that quality is not MP4-compatible.
+Fix:      plays in VLC / IINA / most players; otherwise try -r 720p.
+
+Problem:  MP3 sounds slightly worse than on YouTube
+Cause:    MP3 is itself compressed; converting YouTube's audio to MP3 always
+          costs a little. ytd uses the best MP3 settings (320 kbps CBR,
+          highest encoder quality, single encode from the best original track).
+
+
+6. STILL STUCK?
+---------------
+Run this and send the file  logs\debug.log  (it contains no passwords or
+private links):
+
+    ./ytd "<URL>" --verbose --log-file logs/debug.log
+    ./ytd --doctor

@@ -1,0 +1,51 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments / local runtimes
+.venv/
+venv/
+runtime/
+
+# Downloaded media and temporary files
+downloads/*
+!downloads/.gitkeep
+*.mp4
+*.mkv
+*.webm
+*.mp3
+*.m4a
+*.wav
+*.flac
+*.part
+*.ytdl
+
+# Logs
+logs/
+*.log
+
+# Secrets / credentials
+.env
+.env.*
+*.pem
+*.key
+cookies.txt
+cookies*.txt
+*.cookie
+session.json
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Build / distribution artifacts
+dist/
+build/
+*.zip
+*.sha256

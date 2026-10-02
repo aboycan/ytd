@@ -1,0 +1,63 @@
+#!/bin/sh
+# ytd launcher for macOS and Linux (portable edition).
+# The first run sets up everything inside this folder (runtime/), later runs start instantly.
+#   ./ytd "https://www.youtube.com/watch?v=XXXXXXXXXXX"          video, 1080p
+#   ./ytd "https://www.youtube.com/watch?v=XXXXXXXXXXX" --type audio
+#   ./ytd --setup          repair / re-run the setup
+#   ./ytd --add-to-path    make "ytd" work from any folder
+set -eu
+
+# Resolve the real folder of this script (also when called through a symlink).
+self="$0"
+while [ -L "$self" ]; do
+  link="$(readlink "$self")"
+  case "$link" in /*) self="$link" ;; *) self="$(dirname "$self")/$link" ;; esac
+done
+ROOT="$(cd "$(dirname "$self")" && pwd)"
+
+case "$(uname -s)" in
+  Darwin) os="macos" ;;
+  Linux)  os="linux" ;;
+  *) echo "Unsupported system: $(uname -s). On Windows use ytd.cmd." >&2; exit 1 ;;
+esac
+case "$(uname -m)" in
+  arm64|aarch64) arch="arm64" ;;
+  *) arch="x64" ;;
+esac
+RUNTIME="$ROOT/runtime/$os-$arch"
+PY="$RUNTIME/venv/bin/python"
+
+needs_setup() {
+  [ ! -f "$RUNTIME/.ready" ] || [ ! -x "$PY" ] || ! "$PY" -c "import yt_dlp" >/dev/null 2>&1
+}
+
+if [ "${1:-}" = "--setup" ] || [ "${1:-}" = "--repair" ]; then
+  rm -f "$RUNTIME/.ready"
+  sh "$ROOT/setup/bootstrap.sh" "$ROOT" "$RUNTIME"
+  exit $?
+fi
+
+if [ "${1:-}" = "--add-to-path" ]; then
+  mkdir -p "$HOME/.local/bin"
+  ln -sf "$ROOT/ytd" "$HOME/.local/bin/ytd"
+  line='export PATH="$HOME/.local/bin:$PATH"'
+  if [ "$os" = "macos" ]; then profiles="$HOME/.zshrc"; else profiles="$HOME/.bashrc $HOME/.profile"; fi
+  [ "$os" = "linux" ] && [ -f "$HOME/.zshrc" ] && profiles="$profiles $HOME/.zshrc"
+  for profile in $profiles; do
+    grep -Fq "$line" "$profile" 2>/dev/null || printf '\n# added by ytd\n%s\n' "$line" >> "$profile"
+  done
+  echo "Done. Open a new terminal window and type: ytd --version"
+  exit 0
+fi
+
+if needs_setup; then
+  echo "First run: setting up ytd in $RUNTIME (this happens only once)..."
+  sh "$ROOT/setup/bootstrap.sh" "$ROOT" "$RUNTIME" || {
+    echo "Setup failed. Fix the problem shown above, then run: $ROOT/ytd --setup" >&2
+    exit 1
+  }
+fi
+
+PATH="$RUNTIME/bin:$RUNTIME/venv/bin:$PATH"
+export PATH
+exec "$PY" "$ROOT/youtube_downloader.py" "$@"

@@ -1,0 +1,13 @@
+{
+  "_comment": "Settings for youtube_downloader.py. Command-line arguments override these values. Relative paths are relative to the YoutubeDownloadPlugin folder.",
+  "output_dir": "downloads",
+  "default_resolution": "1080p",
+  "fallback": "lower",
+  "ffmpeg_path": null,
+  "prefer_mp4": true,
+  "retries": 3,
+  "retry_backoff_seconds": 2.0,
+  "socket_timeout_seconds": 30,
+  "disk_space_margin": 0.10,
+  "validate_output": true
+}
